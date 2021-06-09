@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -144,14 +145,43 @@ func (k *keeper) handleRequest(req *requestWrapper) {
 	// Read and close the body of the response
 	readAndClose(resp.Body)
 
-	go k.resend(req)
+	go k.resend(req, timer(resp.Header.Get("Retry-After")))
 }
 
-func (k *keeper) resend(req *requestWrapper) {
-	// Send the request back on the channel
+func timer(retryHeader string) *time.Timer {
+	if retryHeader == "" {
+		return time.NewTimer(0)
+	}
+
+	t, err := time.Parse(time.RFC1123, retryHeader)
+	if err == nil {
+		return time.NewTimer(t.Sub(time.Now()))
+	}
+
+	if !strings.HasSuffix(retryHeader, "s") {
+		retryHeader = retryHeader + "s"
+	}
+
+	rdelay, err := time.ParseDuration(retryHeader)
+	if err == nil {
+		return time.NewTimer(rdelay)
+	}
+
+	return time.NewTimer(0)
+}
+
+func (k *keeper) resend(req *requestWrapper, timer *time.Timer) {
+	defer timer.Stop()
+
 	select {
 	case <-req.ctx.Done():
-	case k.requests <- req:
+	case <-timer.C:
+
+		// Send the request back on the channel
+		select {
+		case <-req.ctx.Done():
+		case k.requests <- req:
+		}
 	}
 }
 

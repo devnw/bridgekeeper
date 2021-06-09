@@ -376,6 +376,142 @@ func Test_Do_Throughput(t *testing.T) {
 	}
 }
 
+// NOTE: The timer tests use for the most part a 1 second tolerance
+// due to the fact that the timer has to be scheduled and by the time
+// the current time is checked it actually may have elapsed an entire second
+// this is meant to be as close as possible to real-world
+
+func Test_timer_intHeader(t *testing.T) {
+	testdata := map[string]struct {
+		retryHeader string
+		expected    time.Duration
+		tolerance   time.Duration
+	}{
+		"integer w/s - 1s": {
+			"1s",
+			time.Second,
+			time.Second,
+		},
+		"integer w/s - 2s": {
+			"2s",
+			time.Second * 2,
+			time.Second,
+		},
+		"integer w/s - 5s": {
+			"5s",
+			time.Second * 5,
+			time.Second,
+		},
+		"integer w/s - 10s": {
+			"10s",
+			time.Second * 10,
+			time.Second,
+		},
+		"integer wout/s - 1s": {
+			"1",
+			time.Second,
+			time.Second,
+		},
+		"integer wout/s - 2s": {
+			"2",
+			time.Second * 2,
+			time.Second,
+		},
+		"integer wout/s - 5s": {
+			"5",
+			time.Second * 5,
+			time.Second,
+		},
+		"integer wout/s - 10s": {
+			"10",
+			time.Second * 10,
+			time.Second,
+		},
+		"invalid parse": {
+			"not a valid time to parse",
+			0,
+			time.Microsecond * 500,
+		},
+		"empty header": {
+			"",
+			0,
+			time.Microsecond * 500,
+		},
+	}
+
+	for name, test := range testdata {
+		t.Run(name, func(t *testing.T) {
+			timer := timer(test.retryHeader)
+			defer timer.Stop()
+
+			tstart := time.Now()
+
+			<-timer.C
+			diff := time.Now().Sub(tstart)
+			expPos := test.expected + test.tolerance
+			expNeg := test.expected - test.tolerance
+			if diff < expNeg || diff > expPos {
+				t.Fatalf("timer exceeded tolerance %s < %s < %s", expNeg, diff, expPos)
+			}
+		})
+	}
+}
+
+func timedelay(format string, delay time.Duration) string {
+	return time.Now().Add(delay).Format(format)
+}
+
+func Test_timer_timeHeader(t *testing.T) {
+	testdata := map[string]struct {
+		format    string
+		expected  time.Duration
+		tolerance time.Duration
+	}{
+		"RFC1123 - 1s": {
+			time.RFC1123,
+			time.Second,
+			time.Second,
+		},
+		"RFC1123 - 2s": {
+			time.RFC1123,
+			time.Second * 2,
+			time.Second,
+		},
+		"RFC1123 - 5s": {
+			time.RFC1123,
+			time.Second * 5,
+			time.Second,
+		},
+		"RFC1123 - 10s": {
+			time.RFC1123,
+			time.Second * 5,
+			time.Second,
+		},
+		"invalid parse": {
+			time.RFC3339,
+			0,
+			time.Microsecond * 500,
+		},
+	}
+
+	for name, test := range testdata {
+		t.Run(name, func(t *testing.T) {
+			timer := timer(timedelay(test.format, test.expected))
+			defer timer.Stop()
+
+			tstart := time.Now()
+
+			<-timer.C
+			diff := time.Now().Sub(tstart)
+			expPos := test.expected + test.tolerance
+			expNeg := test.expected - test.tolerance
+			if diff < expNeg || diff > expPos {
+				t.Fatalf("timer exceeded tolerance %s < %s < %s", expNeg, diff, expPos)
+			}
+		})
+	}
+}
+
 func Benchmark_Do_ZeroConcurrency(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
