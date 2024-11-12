@@ -30,17 +30,13 @@ jobs:
         uses: 1password/install-cli-action@v1
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v30
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - uses: workflow/nix-shell-action@v3
-        id: build 
-        with:
-          flakes-from-devshell: true
-          script: |
-            make lint
+      - name: Build
+        run: nix develop --ignore-environment --command "make lint"
   build:
     name: "Build"
     runs-on: "ubuntu-latest"
@@ -56,17 +52,13 @@ jobs:
         uses: 1password/install-cli-action@v1
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v30
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - uses: workflow/nix-shell-action@v3
-        id: build 
-        with:
-          flakes-from-devshell: true
-          script: |
-            make build-ci
+      - name: Build
+        run: nix develop --ignore-environment --command "make build-ci"
 
       - name: Upload Test Coverage
         uses: actions/upload-artifact@v3
@@ -96,17 +88,13 @@ jobs:
         uses: 1password/install-cli-action@v1
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v30
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - uses: workflow/nix-shell-action@v3
-        id: build 
-        with:
-          flakes-from-devshell: true
-          script: |
-            make test-ci
+      - name: Build
+        run: nix develop --ignore-environment --command "make test-ci"
 
       - name: Upload Test Coverage
         uses: actions/upload-artifact@v3
