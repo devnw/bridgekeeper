@@ -35,8 +35,8 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
-        run: nix develop --ignore-environment --command "make lint"
+      - name: Lint
+        run: nix develop --command make lint
   build:
     name: "Build"
     runs-on: "ubuntu-latest"
@@ -58,7 +58,7 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
-        run: nix develop --ignore-environment --command "make build-ci"
+        run: nix develop --command make build
 
       - name: Upload Test Coverage
         uses: actions/upload-artifact@v3
@@ -93,8 +93,8 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
-        run: nix develop --ignore-environment --command "make test-ci"
+      - name: Test 
+        run: nix develop --command make test-ci
 
       - name: Upload Test Coverage
         uses: actions/upload-artifact@v3

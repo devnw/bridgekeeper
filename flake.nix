@@ -74,7 +74,7 @@
       {
         packages.default = pkgs.buildGoApplication {
           pname = "bk";
-          version = "2";
+          version = "2.0.0";
 
           pwd = ./.;
           src = ./.;
@@ -84,6 +84,7 @@
           buildPhase = ''
             make build
           '';
+
           installPhase = ''
             make install
           '';
