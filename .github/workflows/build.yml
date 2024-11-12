@@ -35,6 +35,23 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /nix/store/
+          key: ${{ runner.os }}-nix-${{ hashFiles('**/flake.nix') }}
+          restore-keys: |
+            ${{ runner.os }}-nix-
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Lint
         run: nix develop --command make lint
   build:
@@ -56,6 +73,23 @@ jobs:
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /nix/store/
+          key: ${{ runner.os }}-nix-${{ hashFiles('**/flake.nix') }}
+          restore-keys: |
+            ${{ runner.os }}-nix-
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Build
         run: nix develop --command make build
@@ -92,6 +126,23 @@ jobs:
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /nix/store/
+          key: ${{ runner.os }}-nix-${{ hashFiles('**/flake.nix') }}
+          restore-keys: |
+            ${{ runner.os }}-nix-
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Test 
         run: nix develop --command make test-ci
