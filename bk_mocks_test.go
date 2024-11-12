@@ -20,7 +20,7 @@ type httpclient struct {
 	cancel      bool
 }
 
-func (client *httpclient) Do(r *http.Request) (*http.Response, error) {
+func (client *httpclient) Do(*http.Request) (*http.Response, error) {
 	if client.delay > 0 {
 		time.Sleep(client.delay)
 	}
@@ -42,8 +42,8 @@ func (client *httpclient) Do(r *http.Request) (*http.Response, error) {
 
 type fakeReadCloser struct{}
 
-func (rc *fakeReadCloser) Read(p []byte) (n int, err error) { return 0, io.EOF }
-func (rc *fakeReadCloser) Close() error                     { return nil }
+func (rc *fakeReadCloser) Read([]byte) (int, error) { return 0, io.EOF }
+func (rc *fakeReadCloser) Close() error             { return nil }
 
 type badclient struct {
 	panic       bool
@@ -55,7 +55,7 @@ type badclient struct {
 	concurrency int
 }
 
-func (client *badclient) Do(r *http.Request) (*http.Response, error) {
+func (client *badclient) Do(*http.Request) (*http.Response, error) {
 	if client.panic {
 		panic("panic")
 	}
@@ -67,11 +67,7 @@ type tstruct struct {
 	error bool
 }
 
-func (t *tstruct) correct(err error, paniced bool) error {
-	if paniced {
-		return errors.New("unexpected panic")
-	}
-
+func (t *tstruct) correct(err error, _ bool) error {
 	if t.error && err == nil {
 		return errors.New("expected error but success instead")
 	}
