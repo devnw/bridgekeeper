@@ -104,6 +104,12 @@ func (k *keeper) cleanup() {
 	}
 }
 
+// RoundTrip is a wrapper for the Do method of the bridgekeeper. This is
+// necessary for the bridgekeeper to implement the http.RoundTripper
+func (k *keeper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return k.Do(req)
+}
+
 // Do sends the http request through the bridgekeeper to be executed against the
 // endpoint when there are available threads to do so. This returns an http
 // response which is returned from the execution of the http request as well
