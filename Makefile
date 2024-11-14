@@ -4,6 +4,7 @@ all: build tidy lint fmt test
 # Variables
 # ------------------------------------------------------------------------
 env=CGO_ENABLED=1
+op= op run --env-file="./.env" -- 
 
 test: 
 	CGO_ENABLED=1 go test -v -cover -failfast -race ./...
@@ -43,7 +44,8 @@ gomod2nix:
 build: gomod2nix test
 	$(env) go build ./...
 
-release-dev: build-ci
+release-dev:
+	$(env) $(op) goreleaser release --clean --snapshot
 
 upgrade:
 	pre-commit autoupdate
@@ -57,6 +59,14 @@ fmt:
 
 tidy: fmt
 	go mod tidy
+
+release: 
+	if [ -z "$(tag)" ]; then \
+		echo "tag is required"; \
+		exit 1; \
+	fi
+	git tag -a ${tag} -m "${tag}"
+	git push origin ${tag}
 
 clean: 
 	rm -rf dist
@@ -77,10 +87,8 @@ test-ci:
 build-ci:
 	$(env) go build ./...
 
-bench-ci:
-	go test -bench=. ./... | tee output.txt
-
 release-ci:
+	$(env) $(op) goreleaser release --clean
 
 #-------------------------------------------------------------------------
 # Force targets
