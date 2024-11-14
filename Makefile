@@ -30,6 +30,8 @@ bench:
 bench-ci:
 	go test -bench=. ./... | tee bench-output.txt
 
+test-all: test fuzz
+
 lint: 
 	goimports -w .
 	golangci-lint run
