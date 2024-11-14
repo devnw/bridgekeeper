@@ -9,11 +9,14 @@ on:
 permissions:
   contents: write
   deployments: write
+  packages: write
+  pages: write
 
 env:
-  GOPRIVATE: go.devnw.com
+  GOPRIVATE: ${{ vars.GOPRIVATE }}
   GH_ACCESS_TOKEN: ${{ secrets.GH_PAT }}
   OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
