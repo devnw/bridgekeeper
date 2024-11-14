@@ -5,7 +5,6 @@
 external/
 
 # outputs
-output.txt
 dist/
 
 # build folders
@@ -34,6 +33,7 @@ vendor/
 coverage.html
 coverage
 coverage.txt
+bench-output.txt
 
 # ignore keyfiles
 *.crt
