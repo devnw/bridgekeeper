@@ -28,9 +28,6 @@ fuzz:
 bench:
 	go test -bench=. -benchmem ./...
 
-bench-ci:
-	go test -bench=. ./... | tee bench-output.txt
-
 test-all: test fuzz
 
 lint: 
@@ -75,7 +72,10 @@ clean:
 #-------------------------------------------------------------------------
 # CI targets
 #-------------------------------------------------------------------------
-test-ci: 
+build-ci: lint
+	$(env) go build ./...
+
+test-ci: build-ci 
 	CGO_ENABLED=1 go test \
 				-cover \
 				-covermode=atomic \
@@ -84,10 +84,12 @@ test-ci:
 				-race ./...
 	make fuzz FUZZ_TIME=10
 
-build-ci:
-	$(env) go build ./...
 
-release-ci:
+bench-ci: test-ci
+	go test -bench=. ./... | tee bench-output.txt
+
+
+release-ci: bench-ci
 	$(env) $(op) goreleaser release --clean
 
 #-------------------------------------------------------------------------

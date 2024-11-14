@@ -16,5 +16,18 @@ env:
 
 jobs:
   build:
-    uses: devnw/workflows/.github/workflows/make-build-nix.yml@main
+    name: Lint, Build, Test, Benchmark, and Release
+    if: ! startsWith(github.ref, 'refs/tags/v') 
+    uses: devnw/workflows/.github/workflows/nix.yml@main
+    with:
+      job: build
+      command: make bench-ci
+    secrets: inherit # pragma: allowlist secret
+  release:
+    name: Lint, Build, Test, Benchmark and Release
+    if: startsWith(github.ref, 'refs/tags/v') 
+    uses: devnw/workflows/.github/workflows/nix.yml@main
+    with:
+      job: build
+      command: make release-ci
     secrets: inherit # pragma: allowlist secret
