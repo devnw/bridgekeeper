@@ -9,10 +9,10 @@ on:
       - completed
 jobs:
   automerge:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: automerge
-        uses: "pascalgn/automerge-action@v0.16.2"
+        uses: "pascalgn/automerge-action@v0.16.4"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           MERGE_METHOD: squash
