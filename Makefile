@@ -27,6 +27,9 @@ fuzz:
 bench:
 	go test -bench=. -benchmem ./...
 
+bench-ci:
+	go test -bench=. ./... | tee bench-output.txt
+
 lint: 
 	goimports -w .
 	golangci-lint run
