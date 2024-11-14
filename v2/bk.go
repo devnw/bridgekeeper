@@ -1,3 +1,9 @@
+// package bk wraps an function literal of the http.RoundTripper interface
+// and provides a mechanism for controlling the rate of requests to an endpoint
+// by providing a concurrency limit and a delay between requests. The returned
+// keeper struct implements both the standard "Do" method on an http.Client as
+// well as the RoundTripper interface.
+
 package bk
 
 import (
