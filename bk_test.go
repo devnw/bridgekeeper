@@ -14,7 +14,7 @@ type tcase struct {
 	success tstruct
 }
 
-func cases(t *testing.T, req func() *http.Request) map[string]tcase {
+func cases(_ *testing.T, req func() *http.Request) map[string]tcase {
 	return map[string]tcase{
 		"ValidWValidClient": {
 			&httpclient{

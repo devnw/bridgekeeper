@@ -109,7 +109,7 @@ func (k *Keeper) handleRequest(req *requestWrapper) {
 
 	// Execute a call against the endpoint handling any potential panics from
 	// the http client
-	resp, err := k.execute(req)
+	resp, err := k.execute(req) //nolint:bodyclose // upstream responsibility
 	if resp == nil {
 		select {
 		case <-req.ctx.Done():

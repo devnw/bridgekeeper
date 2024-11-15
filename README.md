@@ -1,12 +1,10 @@
-# Bridgekeeper - What is your (Re)Quest?
-
-## HTTP Request Limiter and Retrier
+# Bridgekeeper - HTTP Request Limiter and Retrier
 
 [![Build & Test](https://github.com/devnw/bridgekeeper/actions/workflows/build.yml/badge.svg)](https://github.com/devnw/bridgekeeper/actions/workflows/build.yml)
 [![Go Reference](https://pkg.go.dev/badge/go.devnw.com/bk/v2.svg)](https://pkg.go.dev/go.devnw.com/bk)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-### Using Bridgekeeper
+## Using Bridgekeeper
 
 ```go
 go get -u go.devnw.com/bk/v2@latest
@@ -29,6 +27,7 @@ go get -u go.devnw.com/bk/v2@latest
         log.Fatal(err)
     }
 ```
+
 ### HTTP Round Tripper Example
 
 ```go

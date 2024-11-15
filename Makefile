@@ -5,35 +5,29 @@ all: build tidy lint fmt test
 # ------------------------------------------------------------------------
 env=CGO_ENABLED=1
 op= op run --env-file="./.env" -- 
+SHELL := $(shell which bash)
+fuzzsh=https://raw.githubusercontent.com/devnw/workflows/refs/heads/main/fuzz.sh
+
+pre-commit: update upgrade tidy fmt lint build test
 
 test: 
 	CGO_ENABLED=1 go test -v -cover -failfast -race ./...
 
 fuzz:
-	@fuzzTime=$${FUZZ_TIME:-10}; \
-	files=$$(grep -r --include='**_test.go' --files-with-matches 'func Fuzz' .); \
-	for file in $$files; do \
-		funcs=$$(grep -o 'func Fuzz\w*' $$file | sed 's/func //'); \
-		for func in $$funcs; do \
-			echo "Fuzzing $$func in $$file"; \
-			parentDir=$$(dirname $$file); \
-			go test $$parentDir -run=$$func -fuzz=$$func -fuzztime=$${fuzzTime}s; \
-			if [ $$? -ne 0 ]; then \
-				echo "Fuzzing $$func in $$file failed"; \
-				exit 1; \
-			fi; \
-		done; \
-	done
+	curl -fsSL $(fuzzsh) | $(SHELL)
 
 bench:
 	go test -bench=. -benchmem ./...
 
 test-all: test fuzz
 
-lint: 
+fmt: 
+	nixfmt flake.nix
 	goimports -w .
+	gofmt -s -w .
+
+lint: 
 	golangci-lint run
-	pre-commit run --all-files	
 
 gomod2nix:
 	gomod2nix generate
@@ -51,17 +45,11 @@ upgrade:
 update:
 	git submodule update --recursive
 
-fmt:
-	gofmt -s -w .
-
 tidy: fmt
 	go mod tidy
 
 release: 
-	if [ -z "$(tag)" ]; then \
-		echo "tag is required"; \
-		exit 1; \
-	fi
+	if [ -z "$(tag)" ]; then echo "tag is required"; exit 1; fi
 	git tag -a ${tag} -m "${tag}"
 	git push origin ${tag}
 
@@ -102,4 +90,4 @@ FORCE:
 # Phony targets
 #-------------------------------------------------------------------------
 
-.PHONY: build test lint fuzz
+.PHONY: build test lint fuzz all clean FORCE

@@ -55,6 +55,8 @@
           automake
           act
           gcc
+          ruby
+          commitizen
 
           python
 
