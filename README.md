@@ -7,25 +7,21 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-## Bridgekeeper is a request throttler for http.Client
+## Bridgekeeper is an HTTP Request Limiter and Retrier
 
-Bridgekeeper replaces the hard implementation of `http.Client` with an
-implementation of a shared interface such that anything implementing the
-`bk.Client` interface can use Bridgekeeper to throttle API requests through
-configuration.
 
 ### Using Bridgekeeper
 
 ```go
-go get -u go.devnw.com/bk@latest
+go get -u go.devnw.com/bk/v2@latest
 ```
 
-### Example
+### HTTP Client Example
 
 ```go
     client := bk.New(
         ctx, // Your application context
-        http.DefaultClient, // Your HTTP Client
+        http.DefaultClient.Do, // Your HTTP Client Do function (http.Client.Do)
         time.Millisecond, // Delay between requests
         5, // Retry count
         10, // Concurrent request limit
@@ -33,16 +29,26 @@ go get -u go.devnw.com/bk@latest
     )
 
     resp, err := client.Do(http.NewRequest(http.MethodGet, "localhost:5555"))
+    if err != nil {
+        log.Fatal(err)
+    }
 ```
-
-## Client Interface
-
-Bridgekeeper implements the interface shown below
+### HTTP Round Tripper Example
 
 ```go
-type Client interface {
-    Do(request *http.Request) (*http.Response, error)
-}
+    client := bk.New(
+        ctx, // Your application context
+        http.DefaultTransport.RoundTrip, // Your HTTP Transport
+        time.Millisecond, // Delay between requests
+        5, // Retry count
+        10, // Concurrent request limit
+        http.DefaultClient.Timeout, // Request timeout
+    )
+
+    resp, err := client.RoundTrip(http.NewRequest(http.MethodGet, "localhost:5555"))
+    if err != nil {
+        log.Fatal(err)
+    }
 ```
 
-This interface is also implemented by `http.Client`.
+> NOTE: Bridgekeeper Returns a Do / RoundTrip Compliant HTTP Client
