@@ -10,6 +10,14 @@
 go get -u go.devnw.com/bk/v2@latest
 ```
 
+## Version 2 Changes
+
+Version 2 changes the API for Bridgekeeper to using a direct function literal
+in the `New` function so that it can accept both the `Do` and `RoundTrip`
+functions from the `http.Client` and `http.Transport` respectively. This
+allows for Bridgekeeper to support connections where a custom `http.Transport`
+is may be required, for example, when using a custom TLS configuration.
+
 ### HTTP Client Example
 
 ```go
