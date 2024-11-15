@@ -1,3 +1,9 @@
+// package bk wraps an function literal of the http.RoundTripper interface
+// and provides a mechanism for controlling the rate of requests to an endpoint
+// by providing a concurrency limit and a delay between requests. The returned
+// keeper struct implements both the standard "Do" method on an http.Client as
+// well as the RoundTripper interface.
+
 package bk
 
 import (
@@ -9,10 +15,10 @@ import (
 	"time"
 )
 
-type keeper struct {
+type Keeper struct {
 	ctx               context.Context
 	cancel            context.CancelFunc
-	client            Client
+	fn                RoundTrip
 	retries           int
 	ticker            *time.Ticker
 	delay             time.Duration
@@ -30,7 +36,7 @@ type keeper struct {
 // channel and executes the http request against the endpoint and returns the
 // response across the response channel of the request along with any errors
 // that occurred when making the request
-func (k *keeper) receive() chan<- *requestWrapper {
+func (k *Keeper) receive() chan<- *requestWrapper {
 	reqs := make(chan *requestWrapper)
 
 	go func(reqs chan *requestWrapper) {
@@ -46,7 +52,7 @@ func (k *keeper) receive() chan<- *requestWrapper {
 	return reqs
 }
 
-func (k *keeper) reqHandler(reqs chan *requestWrapper) {
+func (k *Keeper) reqHandler(reqs chan *requestWrapper) {
 	for {
 		select {
 		case <-k.ctx.Done():
@@ -70,7 +76,7 @@ func (k *keeper) reqHandler(reqs chan *requestWrapper) {
 	}
 }
 
-func (k *keeper) process(requests chan *requestWrapper) {
+func (k *Keeper) process(requests chan *requestWrapper) {
 	defer func() {
 		_ = recover()
 	}()
@@ -86,7 +92,7 @@ func (k *keeper) process(requests chan *requestWrapper) {
 	}
 }
 
-func (k *keeper) handleRequest(req *requestWrapper) {
+func (k *Keeper) handleRequest(req *requestWrapper) {
 	defer func() {
 		if r := recover(); r != nil {
 			return
@@ -103,7 +109,6 @@ func (k *keeper) handleRequest(req *requestWrapper) {
 
 	// Execute a call against the endpoint handling any potential panics from
 	// the http client
-	//nolint:bodyclose // this is handled upstream
 	resp, err := k.execute(req)
 	if resp == nil {
 		select {
@@ -167,7 +172,7 @@ func timer(retryHeader string) *time.Timer {
 	return time.NewTimer(0)
 }
 
-func (k *keeper) resend(req *requestWrapper, timer *time.Timer) {
+func (k *Keeper) resend(req *requestWrapper, timer *time.Timer) {
 	defer timer.Stop()
 
 	select {
@@ -182,7 +187,7 @@ func (k *keeper) resend(req *requestWrapper, timer *time.Timer) {
 	}
 }
 
-func (k *keeper) execute(req *requestWrapper) (resp *http.Response, err error) {
+func (k *Keeper) execute(req *requestWrapper) (resp *http.Response, err error) {
 	defer func(req *requestWrapper) {
 		if r := recover(); r != nil {
 			err = errors.New("panic occurred while executing http request")
@@ -198,7 +203,7 @@ func (k *keeper) execute(req *requestWrapper) (resp *http.Response, err error) {
 	// req.request.Close = true
 
 	// Execute the http request and return the response to the requester
-	return k.client.Do(req.request)
+	return k.fn(req.request)
 }
 
 // readAndClose reads all of the contents of the readcloser and closes

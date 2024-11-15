@@ -17,11 +17,7 @@ import (
 	"time"
 )
 
-// Client defines an interface with a Do method for use with http.Client or other
-// mocked instances that implement a do method that accept a request and return a response error combo
-type Client interface {
-	Do(req *http.Request) (*http.Response, error)
-}
+type RoundTrip func(*http.Request) (*http.Response, error)
 
 // New creates a new instance of the bridgekeeper for use with an api. New
 // returns an interface implementation of Client which replaces the
@@ -31,12 +27,12 @@ type Client interface {
 // set at creation then the default HTTP client request timeout will be used
 func New(
 	ctx context.Context,
-	client Client,
+	fn RoundTrip,
 	delay time.Duration,
 	retries int,
 	concurrency int,
 	requestTimeout time.Duration,
-) Client {
+) *Keeper {
 	if requestTimeout < time.Nanosecond {
 		requestTimeout = http.DefaultClient.Timeout
 	}
@@ -63,14 +59,14 @@ func New(
 
 	// If a nil client is passed to the bridgekeeper then initialize using the
 	// default http client
-	if client == nil {
-		client = http.DefaultClient
+	if fn == nil {
+		fn = http.DefaultClient.Do
 	}
 
-	k := &keeper{
+	k := &Keeper{
 		ctx:               ctx,
 		cancel:            cancel,
-		client:            client,
+		fn:                fn,
 		retries:           retries,
 		delay:             delay,
 		ticker:            time.NewTicker(delay),
@@ -96,7 +92,7 @@ func New(
 }
 
 // cleanup deals with cleaning any struct values for the keeper
-func (k *keeper) cleanup() {
+func (k *Keeper) cleanup() {
 	<-k.ctx.Done()
 
 	if k.ticker != nil {
@@ -106,7 +102,7 @@ func (k *keeper) cleanup() {
 
 // RoundTrip is a wrapper for the Do method of the bridgekeeper. This is
 // necessary for the bridgekeeper to implement the http.RoundTripper
-func (k *keeper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (k *Keeper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return k.Do(req)
 }
 
@@ -117,7 +113,7 @@ func (k *keeper) RoundTrip(req *http.Request) (*http.Response, error) {
 //
 // XXX: Possibly add in defer here that determines if the response is nil
 // and executes the wrapped `Do` method directly
-func (k *keeper) Do(request *http.Request) (*http.Response, error) {
+func (k *Keeper) Do(request *http.Request) (*http.Response, error) {
 	if request == nil {
 		return nil, errors.New("request cannot be nil")
 	}
@@ -125,7 +121,7 @@ func (k *keeper) Do(request *http.Request) (*http.Response, error) {
 	// Fail open if the bridgekeeper request was canceled
 	select {
 	case <-k.ctx.Done():
-		return k.client.Do(request)
+		return k.fn(request)
 	default:
 
 		// If the request has a context then use it

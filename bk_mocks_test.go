@@ -20,7 +20,11 @@ type httpclient struct {
 	cancel      bool
 }
 
-func (client *httpclient) Do(*http.Request) (*http.Response, error) {
+func (client *httpclient) RoundTrip(r *http.Request) (*http.Response, error) {
+	return client.Do(r)
+}
+
+func (client *httpclient) Do(r *http.Request) (*http.Response, error) {
 	if client.delay > 0 {
 		time.Sleep(client.delay)
 	}
@@ -42,8 +46,8 @@ func (client *httpclient) Do(*http.Request) (*http.Response, error) {
 
 type fakeReadCloser struct{}
 
-func (rc *fakeReadCloser) Read([]byte) (int, error) { return 0, io.EOF }
-func (rc *fakeReadCloser) Close() error             { return nil }
+func (rc *fakeReadCloser) Read(p []byte) (n int, err error) { return 0, io.EOF }
+func (rc *fakeReadCloser) Close() error                     { return nil }
 
 type badclient struct {
 	panic       bool
@@ -55,7 +59,11 @@ type badclient struct {
 	concurrency int
 }
 
-func (client *badclient) Do(*http.Request) (*http.Response, error) {
+func (client *badclient) RoundTrip(r *http.Request) (*http.Response, error) {
+	return client.Do(r)
+}
+
+func (client *badclient) Do(r *http.Request) (*http.Response, error) {
 	if client.panic {
 		panic("panic")
 	}
@@ -67,7 +75,11 @@ type tstruct struct {
 	error bool
 }
 
-func (t *tstruct) correct(err error, _ bool) error {
+func (t *tstruct) correct(err error, paniced bool) error {
+	if paniced {
+		return errors.New("unexpected panic")
+	}
+
 	if t.error && err == nil {
 		return errors.New("expected error but success instead")
 	}
@@ -103,6 +115,10 @@ func newGetReqWCtx() *http.Request {
 type passthrough struct {
 	ctx context.Context
 	out chan *http.Request
+}
+
+func (pass *passthrough) RoundTrip(r *http.Request) (*http.Response, error) {
+	return pass.Do(r)
 }
 
 func (pass *passthrough) Do(r *http.Request) (*http.Response, error) {
