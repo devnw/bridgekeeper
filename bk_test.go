@@ -352,7 +352,7 @@ func Test_New_Defaults(t *testing.T) {
 	// Setting the value for default http timeout
 	http.DefaultClient.Timeout = time.Millisecond
 
-	client := New(nil, nil, -1, -1, -1, -1)
+	client := New(context.TODO(), nil, -1, -1, -1, -1)
 
 	k, ok := client.(*keeper)
 	if !ok {

@@ -1,0 +1,135 @@
+# GitLab CI/CD Configuration for BK Library
+
+include:
+  - component: gitlab.com/devnw/ci-catalog/release-semantic@v1.11.0
+
+  - component: gitlab.com/devnw/ci-catalog/go-build@v1.11.0
+    inputs:
+      stage: build
+      go_version: "1.26"
+      build_flags: '-v'
+
+  - component: gitlab.com/devnw/ci-catalog/go-test@v1.11.0
+    inputs:
+      stage: validate
+      go_version: "1.26"
+      test_flags: '-race -coverprofile=out/coverage.txt -covermode=atomic'
+      coverage_report: true
+
+  - component: gitlab.com/devnw/ci-catalog/go-lint@v1.11.0
+    inputs:
+      stage: validate
+      golangci_version: 'v2.8.0'
+      lint_flags: '--timeout 5m'
+      allow_failure: false
+
+  - component: gitlab.com/devnw/ci-catalog/gosec@v1.11.0
+    inputs:
+      stage: validate
+      allow_failure: false
+
+  - component: gitlab.com/devnw/ci-catalog/govulncheck@v1.11.0
+    inputs:
+      stage: validate
+      allow_failure: false
+
+  - component: gitlab.com/devnw/ci-catalog/security-sast@v1.11.0
+    inputs:
+      stage: validate
+
+  - component: gitlab.com/devnw/ci-catalog/security-dependency-scanning@v1.11.0
+    inputs:
+      stage: validate
+
+  - component: gitlab.com/devnw/ci-catalog/security-secrets@v1.11.0
+    inputs:
+      stage: validate
+
+  - component: gitlab.com/devnw/ci-catalog/security-gitleaks@v1.11.0
+    inputs:
+      stage: validate
+
+  - component: gitlab.com/devnw/ci-catalog/sbom-generate@v1.11.0
+    inputs:
+      stage: validate
+
+  - component: gitlab.com/devnw/ci-catalog/sbom-scan@v1.11.0
+    inputs:
+      stage: validate
+
+  - component: gitlab.com/devnw/ci-catalog/slsa-provenance@v1.11.0
+    inputs:
+      stage: validate
+
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+stages:
+  - validate
+  - test
+  - build
+  - release
+
+variables:
+  CGO_ENABLED: "1"
+  GOFLAGS: "-buildvcs=false"
+
+default:
+  image: golang:1.26
+  before_script:
+    - mkdir -p out
+
+.go-cache:
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.go
+  cache:
+    key: go-modules-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .go/pkg/mod/
+    policy: pull-push
+
+build:
+  stage: build
+  extends: .go-cache
+  script:
+    - go build ./...
+  needs:
+    - lint
+    - test
+
+fuzz:
+  stage: test
+  extends: .go-cache
+  script:
+    - |
+      FUZZ_FILES=$(grep -r "func Fuzz" --include="*_test.go" -l . || true)
+      if [ -z "$FUZZ_FILES" ]; then
+        echo "No fuzz targets found, skipping."
+        exit 0
+      fi
+      for f in $FUZZ_FILES; do
+        pkg=$(dirname "$f")
+        for fn in $(grep -oP 'func \KFuzz\w+' "$f"); do
+          echo "fuzzing ${pkg}::${fn} for 30s"
+          go test -fuzz="$fn" -fuzztime=30s "$pkg"
+        done
+      done
+  allow_failure: true
+  needs:
+    - test
+
+bench:
+  stage: test
+  extends: .go-cache
+  script:
+    - go test -bench=. -benchmem -run=^$ ./... | tee out/bench-output.txt
+  artifacts:
+    paths:
+      - out/bench-output.txt
+    expire_in: 1 week
+  allow_failure: true
+  needs:
+    - test

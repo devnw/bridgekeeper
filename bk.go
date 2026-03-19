@@ -103,7 +103,7 @@ func (k *keeper) handleRequest(req *requestWrapper) {
 
 	// Execute a call against the endpoint handling any potential panics from
 	// the http client
-	resp, err := k.execute(req)
+	resp, err := k.execute(req) //nolint:bodyclose // body ownership transfers to caller via channel
 	if resp == nil {
 		select {
 		case <-req.ctx.Done():
@@ -139,11 +139,13 @@ issuing the redirected request. The value of this field can be either
 an HTTP-date or an integer number of seconds (in decimal) after the
 time of the response.
 
-       Retry-After  = "Retry-After" ":" ( HTTP-date | delta-seconds )
+	Retry-After  = "Retry-After" ":" ( HTTP-date | delta-seconds )
+
 Two examples of its use are
 
-       Retry-After: Fri, 31 Dec 1999 23:59:59 GMT
-       Retry-After: 120
+	Retry-After: Fri, 31 Dec 1999 23:59:59 GMT
+	Retry-After: 120
+
 In the latter example, the delay is 2 minutes.
 */
 func timer(retryHeader string) *time.Timer {
