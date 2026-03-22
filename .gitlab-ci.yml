@@ -1,65 +1,42 @@
 # GitLab CI/CD Configuration for BK Library
 
 include:
-  - component: gitlab.com/devnw/ci-catalog/release-semantic@v1.11.0
-
-  - component: gitlab.com/devnw/ci-catalog/go-build@v1.11.0
+  - component: gitlab.com/devnw/ci-catalog/go-build@v1.20.2
     inputs:
       stage: build
       go_version: "1.26"
       build_flags: '-v'
+      goprivate: 'devnw.dev/*'
 
-  - component: gitlab.com/devnw/ci-catalog/go-test@v1.11.0
+  - component: gitlab.com/devnw/ci-catalog/go-test@v1.20.2
     inputs:
       stage: validate
       go_version: "1.26"
       test_flags: '-race -coverprofile=out/coverage.txt -covermode=atomic'
       coverage_report: true
+      goprivate: 'devnw.dev/*'
 
-  - component: gitlab.com/devnw/ci-catalog/go-lint@v1.11.0
+  - component: gitlab.com/devnw/ci-catalog/go-lint@v1.20.2
     inputs:
       stage: validate
-      golangci_version: 'v2.8.0'
+      golangci_version: 'v2.11.3'
       lint_flags: '--timeout 5m'
       allow_failure: false
+      goprivate: 'devnw.dev/*'
 
-  - component: gitlab.com/devnw/ci-catalog/gosec@v1.11.0
+  - component: gitlab.com/devnw/ci-catalog/gosec@v1.20.2
     inputs:
+      go_version: "1.26"
       stage: validate
       allow_failure: false
+      goprivate: 'devnw.dev/*'
 
-  - component: gitlab.com/devnw/ci-catalog/govulncheck@v1.11.0
+  - component: gitlab.com/devnw/ci-catalog/govulncheck@v1.20.2
     inputs:
+      go_version: "1.26"
       stage: validate
       allow_failure: false
-
-  - component: gitlab.com/devnw/ci-catalog/security-sast@v1.11.0
-    inputs:
-      stage: validate
-
-  - component: gitlab.com/devnw/ci-catalog/security-dependency-scanning@v1.11.0
-    inputs:
-      stage: validate
-
-  - component: gitlab.com/devnw/ci-catalog/security-secrets@v1.11.0
-    inputs:
-      stage: validate
-
-  - component: gitlab.com/devnw/ci-catalog/security-gitleaks@v1.11.0
-    inputs:
-      stage: validate
-
-  - component: gitlab.com/devnw/ci-catalog/sbom-generate@v1.11.0
-    inputs:
-      stage: validate
-
-  - component: gitlab.com/devnw/ci-catalog/sbom-scan@v1.11.0
-    inputs:
-      stage: validate
-
-  - component: gitlab.com/devnw/ci-catalog/slsa-provenance@v1.11.0
-    inputs:
-      stage: validate
+      goprivate: 'devnw.dev/*'
 
 workflow:
   rules:
@@ -71,7 +48,6 @@ stages:
   - validate
   - test
   - build
-  - release
 
 variables:
   CGO_ENABLED: "1"
@@ -97,8 +73,8 @@ build:
   script:
     - go build ./...
   needs:
-    - lint
-    - test
+    - go-lint
+    - "go-test-1.26"
 
 fuzz:
   stage: test
@@ -119,7 +95,7 @@ fuzz:
       done
   allow_failure: true
   needs:
-    - test
+    - "go-test-1.26"
 
 bench:
   stage: test
@@ -132,4 +108,4 @@ bench:
     expire_in: 1 week
   allow_failure: true
   needs:
-    - test
+    - "go-test-1.26"
