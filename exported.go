@@ -59,7 +59,7 @@ func New(
 		ctx = context.Background()
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(ctx) //nolint:gosec // G118: cancel is stored in keeper struct and called in Close()
 
 	// If a nil client is passed to the bridgekeeper then initialize using the
 	// default http client

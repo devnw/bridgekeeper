@@ -12,7 +12,7 @@ include:
     inputs:
       stage: validate
       go_version: "1.26"
-      test_flags: '-race -coverprofile=out/coverage.txt -covermode=atomic'
+      test_flags: '-race -coverprofile=coverage.out -covermode=atomic'
       coverage_report: true
       goprivate: 'devnw.dev/*'
 
